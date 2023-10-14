@@ -28,11 +28,16 @@ export class GUIManager {
         this.gui.add(defaultValues,"normalTreeX")
                 .name("Normal Tree X")
                 .onChange(() => this._UpdateTreePositions(scene,defaultValues))
-                .min(5)
+                .min(-100)
                 .max(100)
-                .step(0.5)
+                .step(1)
 
-        
+        this.gui.add(defaultValues,"normalTreeZ")
+                .name("Normal Tree Z")
+                .onChange(() => this._UpdateTreePositions(scene,defaultValues))
+                .min(-100)
+                .max(100)
+                .step(1)
 
     }
 
@@ -43,11 +48,10 @@ export class GUIManager {
             const x = Math.sin(angle) * radius;
             const z = Math.cos(angle) * radius;
             if(currentObject.objectName === "Forest-Tree"){
-
                 currentObject.position.set(
-                    x + currentObject.treeType.center.x,
+                    x + defaultValues.normalTreeX,
                     0,
-                    z + currentObject.treeType.center.z
+                    z + defaultValues.normalTreeZ
                 )
             }
         }.bind(this))

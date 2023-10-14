@@ -97,7 +97,8 @@ class MagicalForest {
         this._DefaultGUI = {
             minCircleSize: 8,
             maxCircleSize: 40,
-            normalTreeX: TREE_TYPES.NORMAL.center.x
+            normalTreeX: TREE_TYPES.NORMAL.center.x,
+            normalTreeZ: TREE_TYPES.NORMAL.center.z,
         }
         document.body.appendChild(this._threejs.domElement);
 
