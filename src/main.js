@@ -3,7 +3,6 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { Sky } from 'three/addons/objects/Sky.js';
-import GUI from 'lil-gui';  
 import { GUIManager } from "./gui-controller";
 let _APP = null
 
@@ -28,8 +27,8 @@ export const TREE_TYPES = {
             max:130,
         },
         center:{
-            x:- 25,
-            z:- 0
+            x: 0,
+            z:0
         }
 },  
     PALM:{
@@ -37,7 +36,7 @@ export const TREE_TYPES = {
         order:3,
         size:{
             min:130,
-            max:150,
+            max:200,
         },
         center:{
             x:25,
@@ -99,6 +98,17 @@ class MagicalForest {
             maxCircleSize: 40,
             normalTreeX: TREE_TYPES.NORMAL.center.x,
             normalTreeZ: TREE_TYPES.NORMAL.center.z,
+            birchTreeX: TREE_TYPES.BIRCH.center.x,
+            birchTreeZ: TREE_TYPES.BIRCH.center.z,
+            pineTreeX: TREE_TYPES.PINE.center.x,
+            pineTreeZ: TREE_TYPES.PINE.center.z,
+            lampLight:{
+                x:0,
+                y:0,
+                z:0,
+                color:"",
+                intensity:0
+            }
         }
         document.body.appendChild(this._threejs.domElement);
 
@@ -138,9 +148,9 @@ class MagicalForest {
 
         const axesHelper = new THREE.AxesHelper( 5 );
         axesHelper.position.set(0,10,0)
-        this._scene.add(axesHelper);
+        // this._scene.add(axesHelper);
 
-        let light = new THREE.DirectionalLight(0xffffff,1.0);
+        let light = new THREE.DirectionalLight("#bdc3c7",1.0);
         light.position.set(20,40,10);
         light.target.position.set(0,0,0);
         light.castShadow = true;
@@ -155,19 +165,88 @@ class MagicalForest {
         light.shadow.camera.bottom = 100;
         const directionLightHelper = new THREE.DirectionalLightHelper( light, 10 );
         this._scene.add(light);
-        this._scene.add(directionLightHelper);
+        // this._scene.add(directionLightHelper);
 
-        light = new THREE.AmbientLight("yellow",1);
+        light = new THREE.AmbientLight("#2c3e50",1);
         this._scene.add(light);
+
+        light = new THREE.PointLight( "#f1c40f", 1, 100 );
+        light.castShadow = true;
+        light.receiveShadow = true;
+        light.shadow.mapSize.width = 256;
+        light.shadow.mapSize.height = 256;
+        light.shadow.camera.near = 0.1;
+        light.shadow.camera.far = 10;
+        const pointLightHelper = new THREE.PointLightHelper(light,1);
+        light.position.set( 0.5, 2.7, 1.5 );
+        light.name = "LampLight";
+        pointLightHelper.name = "LampLightHelper";
+        this._scene.add( light );
 
         const controls = new OrbitControls(this._camera,this._threejs.domElement);
         controls.target.set(0,20,0);
         controls.update();
 
+        this._LoadGround();
+
+        this._RAF();
+
+    }
+
+    _LoadSky(){
+        const cubeTextureLoader = new THREE.CubeTextureLoader();
+
+        const nightSkyTexture = cubeTextureLoader
+        .setPath("./textures/night-sky/")
+        .load([
+            'px.png',"nx.png",
+            'py.png',"ny.png",
+            'pz.png',"nz.png",
+        ])
+
+        this._scene.background = nightSkyTexture
+
+    }
+
+    _LoadGround(){
+          const textureLoader = new THREE.TextureLoader();
+
+        this.groundColorTexture = textureLoader.load("./textures/ground/ground-color.jpg");
+
+        this.groundAmbientOcclusionTexture = textureLoader.load("./textures/ground/ground-ambientOcclusion.jpg");
+        this.groundHeightTexture = textureLoader.load("./textures/ground/ground-height.png");
+        this.groundNormalTexture = textureLoader.load("./textures/ground/ground-normal.jpg");
+        this.groundRoughnessTexture = textureLoader.load("./textures/ground/ground-roughness.jpg");
+        
+        let repeatCount = 20
+        this.groundColorTexture.repeat.set(repeatCount,repeatCount);
+        this.groundAmbientOcclusionTexture.repeat.set(repeatCount,repeatCount);
+        this.groundHeightTexture.repeat.set(repeatCount,repeatCount);
+        this.groundNormalTexture.repeat.set(repeatCount,repeatCount);
+        this.groundRoughnessTexture.repeat.set(repeatCount,repeatCount);
+
+        this.groundColorTexture.wrapS = THREE.RepeatWrapping;
+        this.groundAmbientOcclusionTexture.wrapS = THREE.RepeatWrapping;
+        this.groundHeightTexture.wrapS = THREE.RepeatWrapping;
+        this.groundNormalTexture.wrapS = THREE.RepeatWrapping;
+        this.groundRoughnessTexture.wrapS = THREE.RepeatWrapping;
+
+        this.groundColorTexture.wrapT = THREE.RepeatWrapping;
+        this.groundAmbientOcclusionTexture.wrapT = THREE.RepeatWrapping;
+        this.groundHeightTexture.wrapT = THREE.RepeatWrapping;
+        this.groundNormalTexture.wrapT = THREE.RepeatWrapping;
+        this.groundRoughnessTexture.wrapT = THREE.RepeatWrapping;
+
+
         const plane = new THREE.Mesh(
             new THREE.PlaneGeometry(100,100,10,10),
             new THREE.MeshStandardMaterial({
-                color:"#27ae60",
+                map: this.groundColorTexture,
+                aoMap: this.groundAmbientOcclusionTexture,
+                normalMap: this.groundNormalTexture,
+                roughnessMap: this.groundRoughnessTexture,
+                displacementMap: this.groundHeightTexture,
+                displacementScale: 0.2,
             })
         )
         plane.castShadow = true;
@@ -175,42 +254,27 @@ class MagicalForest {
         plane.rotation.x = - Math.PI / 2;
         this._scene.add(plane)
 
-
-        this._RAF();
-
-    }
-
-    _LoadSky(){
-        const sky = new Sky();
-        sky.scale.setScalar( 10000 );
-        this._scene.add(sky);
-
-        const skyUniforms = sky.material.uniforms;
-
-		skyUniforms[ 'turbidity' ].value = 10;
-		skyUniforms[ 'rayleigh' ].value = 2;
-		skyUniforms[ 'mieCoefficient' ].value = 0.005;
-		skyUniforms[ 'mieDirectionalG' ].value = 0.8
-		const parameters = {
-			elevation: 2,
-			azimuth: 180
-		};
-
+        
     }
 
     _LoadForest(){
+        this._LoadSky();
         this._LoadCabin();
-        this._LoadDefaultTrees(TREE_TYPES.NORMAL);
+        this._LoadDefaultTrees(TREE_TYPES.NORMAL,200);
         // this._LoadDefaultTrees(TREE_TYPES.MAPLE);
-        // this._LoadDefaultTrees(TREE_TYPES.PINE);
-        // this._LoadDefaultTrees(TREE_TYPES.BIRCH);
+        this._LoadDefaultTrees(TREE_TYPES.PINE,50);
+        this._LoadDefaultTrees(TREE_TYPES.BIRCH,150);
     }
 
     _LoadCabin(){
         this._loader.load("./resources/Cabin.glb",
         function(glb){
             const cabin = glb.scene;
-            cabin.position.set(0,1.1,0)
+            cabin.children[0].castShadow = true;
+            cabin.children[0].receiveShadow = true;
+            cabin.children[1].castShadow = true;
+            cabin.children[1].receiveShadow = true;
+            cabin.position.set(0,0,0)
             let scale = 1 * 0.005
             cabin.scale.set(scale,scale,scale)
             cabin.receiveShadow = true;
@@ -219,23 +283,30 @@ class MagicalForest {
         }.bind(this));
     }
 
-    _LoadDefaultTrees(treeType){
+    _LoadDefaultTrees(treeType,treeAmount = 200){
     
         this._loader.load(`./resources/${treeType.name}.glb`,
         function(model){
             const scene = model.scene;
             const rootNode = scene.children[0];
+            let trees,maxTreeCount;
             // ADD THE DEFAULT TREES
-            const trees = rootNode.children.map(tree => tree);
+            if (treeType.name === TREE_TYPES.PINE.name){
+                trees = rootNode.children.filter(tree => tree.name !== "PineTree_4");
+                maxTreeCount = 4;
+            }else{
+                trees = rootNode.children.map(tree => tree);
+                maxTreeCount = 5;
+            }
 
-            for(let treeCount = 0; treeCount < 200; treeCount++){
+            for(let treeCount = 0; treeCount < treeAmount; treeCount++){
                 const angle = Math.random() * Math.PI * 2
                 const radius = this._DefaultGUI.minCircleSize + Math.random() * this._DefaultGUI.maxCircleSize
 
                 const x = Math.sin(angle) * radius;
                 const z = Math.cos(angle) * radius;
 
-                let tree = trees[Math.floor(Math.random() * 5)].clone();
+                let tree = trees[Math.floor(Math.random() * maxTreeCount)].clone();
 
                 tree.objectName = "Forest-Tree"
                 tree.treeType = treeType;
@@ -254,6 +325,10 @@ class MagicalForest {
 
 
         }.bind(this));
+    }
+
+    _LoadFoliage(){
+
     }
     
 
