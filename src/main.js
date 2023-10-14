@@ -4,10 +4,10 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 import GUI from 'lil-gui';  
-
+import { GUIManager } from "./gui-controller";
 let _APP = null
 
-const TREE_TYPES = {
+export const TREE_TYPES = {
     NORMAL:{
         name:"Trees",
         order:1,
@@ -97,31 +97,8 @@ class MagicalForest {
         this._DefaultGUI = {
             minCircleSize: 8,
             maxCircleSize: 40,
+            normalTreeX: TREE_TYPES.NORMAL.center.x
         }
-        this.gui = new GUI();
-        this.gui.add(this._DefaultGUI,"minCircleSize")
-                .name("Min Forest Size")
-                .onChange(value =>{
-                    this._scene.traverse(function(obj){
-                        const angle = Math.random() * Math.PI * 2
-                        const radius = this._DefaultGUI.minCircleSize + Math.random() * this._DefaultGUI.maxCircleSize
-        
-                        const x = Math.sin(angle) * radius;
-                        const z = Math.cos(angle) * radius;
-
-                        if(obj.objectName === "Forest-Tree"){
-                            obj.position.set(
-                                x + obj.treeType.center.x,
-                                0,
-                                z + obj.treeType.center.z
-                            )
-                        }
-                    }.bind(this))
-                })
-                .min(5)
-                .max(20)
-                .step(0.05)
-
         document.body.appendChild(this._threejs.domElement);
 
         window.addEventListener("resize",() => {
@@ -137,6 +114,7 @@ class MagicalForest {
         this._camera.position.set(60,20,0);
 
         this._scene = new THREE.Scene();
+        this._DebugManager = new GUIManager(this._DefaultGUI,this._scene);
 
         // MODELS
 
