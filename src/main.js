@@ -2,84 +2,11 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-import { Sky } from 'three/addons/objects/Sky.js';
 import { GUIManager } from "./gui-controller";
+import { TREE_TYPES } from "./constants";
 let _APP = null
 
-export const TREE_TYPES = {
-    NORMAL:{
-        name:"Trees",
-        order:1,
-        size:{
-            min:100,
-            max:120,
-        },
-        center:{
-            x:0,
-            z:0
-        }
-},  
-    BIRCH:{
-        name:"Birch Trees",
-        order:2,
-        size:{
-            min:100,
-            max:130,
-        },
-        center:{
-            x: 0,
-            z:0
-        }
-},  
-    PALM:{
-        name:"Palm Trees",
-        order:3,
-        size:{
-            min:130,
-            max:200,
-        },
-        center:{
-            x:25,
-            z:25
-        }
-},  
-    MAPLE:{
-        name:"Maple Trees",
-        order:4,
-        size:{
-            min:100,
-            max:120,
-        },
-        center:{
-            x:25,
-            z:25
-        }
-},  
-    PINE:{
-        name:"Pine Trees",
-        order:5,
-        size:{
-            min:200,
-            max:250,
-        },
-        center:{
-            x:0,
-            z:0
-        }
-},  
-    DEAD:{
-        name:"Dead Trees",
-        order:6,
-        size:{
-            min:100,
-            max:120,
-        },
-        center:{
-            x:25,
-            z:25
-        }
-}   
-}
+
 class MagicalForest {
     constructor(){
         this._Initialize();
@@ -139,21 +66,24 @@ class MagicalForest {
         loadingManager.onLoad = () => {
             const loaderContainer = document.querySelector("div.loader-container");
             loaderContainer.style.display = "none";
+
             if(window.location.pathname.includes("debug")){
                 this._DebugManager = new GUIManager(this._scene);
                 this._DebugManager._AddTreesController(this._DefaultGUI.initialTreeValues)
                 this._DebugManager._AddLampController(this._DefaultGUI.lampLight)
+                this._DebugManager._AddCabinController();
+                
             }
         }
 
         loadingManager.onProgress = (url, loadedAssets, totalAssets) =>{
             const loaderText = document.querySelector("h6#load-percentage");
             const loaderBar = document.querySelector("div.loader-main");
-            console.log(`LOADED ${loadedAssets} / ${totalAssets}`);       
+            // console.log(`LOADED ${loadedAssets} / ${totalAssets}`);       
             const percentage = Math.floor((loadedAssets / totalAssets) * 100);
             loaderText.textContent = percentage + "%";
             loaderBar.style.width = percentage + "%";
-            console.log("Loaded " + percentage + "%");
+            // console.log("Loaded " + percentage + "%");
         }
         this._loader = new GLTFLoader(loadingManager);
         const dracoLoader = new DRACOLoader();
@@ -169,7 +99,7 @@ class MagicalForest {
         axesHelper.position.set(0,10,0)
         this._scene.add(axesHelper);
 
-        let light = new THREE.DirectionalLight("white",1.0);
+        let light = new THREE.DirectionalLight("white",1.5);
         light.position.set(0,5,10);
         light.target.position.set(0,0,0);
         light.castShadow = true;
@@ -281,6 +211,7 @@ class MagicalForest {
 
     _LoadForest(){
         this._LoadSky();
+        this._LoadFoliage();
         this._LoadCabin();
         this._LoadDefaultTrees(TREE_TYPES.NORMAL,200);
         this._LoadDefaultTrees(TREE_TYPES.MAPLE,40);
@@ -296,11 +227,12 @@ class MagicalForest {
             cabin.children[0].receiveShadow = true;
             cabin.children[1].castShadow = true;
             cabin.children[1].receiveShadow = true;
-            cabin.position.set(0,0,0)
+            cabin.position.set(0,-0.222,0)
             let scale = 1 * 0.005
             cabin.scale.set(scale,scale,scale)
             cabin.receiveShadow = true;
             cabin.castShadow = true;
+            cabin.name = "Cabin";
             this._scene.add(cabin);
         }.bind(this));
     }
@@ -354,8 +286,76 @@ class MagicalForest {
         }.bind(this));
     }
 
-    _LoadFoliage(){
+    async _LoadFoliage(){
+        const rocksScene = await this._loader.loadAsync("./resources/Rocks.glb");
+        const bushesScene = await this._loader.loadAsync("./resources/Bushes.glb");
+        const grassScene = await this._loader.loadAsync("./resources/Grass.glb");
 
+        const rocks = rocksScene.scene.children[0].children;
+        const bushes = bushesScene.scene.children[0].children;
+        const grass = grassScene.scene.children[0].children;
+        console.log(rocks)
+        console.log(bushes)
+        console.log(grass)
+
+        // LOAD GRASS
+        for(let i = 0; i < 5000 ; i++) {
+            const angle = Math.random() * Math.PI * 2
+            const radius = 5 + Math.random() * 40
+
+            const x = Math.sin(angle) * radius;
+            const z = Math.cos(angle) * radius;
+            let randomAsset = grass[Math.floor(Math.random() * grass.length)].clone();
+
+            randomAsset.position.set(
+                x ,
+                0,
+                z ,
+            )
+
+            this._scene.add(randomAsset);
+        }
+        // LOAD ROCKS
+        for(let i = 0; i < 20 ; i++) {
+            const angle = Math.random() * Math.PI * 2
+            const radius = 5 + Math.random() * 10
+
+            const x = Math.sin(angle) * radius;
+            const z = Math.cos(angle) * radius;
+            let randomAsset = rocks[Math.floor(Math.random() * rocks.length)].clone();
+
+            randomAsset.position.set(
+                x ,
+                0,
+                z ,
+            )
+
+            randomAsset.rotation.set(
+                Math.random() * Math.PI + 5,
+                0,
+                Math.random() * Math.PI + 5,
+            )
+
+            this._scene.add(randomAsset);
+        }
+
+          // LOAD BUSH
+          for(let i = 0; i < 100 ; i++) {
+            const angle = Math.random() * Math.PI * 2
+            const radius = 5 + Math.random() * 20
+
+            const x = Math.sin(angle) * radius;
+            const z = Math.cos(angle) * radius;
+            let randomAsset = bushes[Math.floor(Math.random() * bushes.length)].clone();
+
+            randomAsset.position.set(
+                x ,
+                0.5,
+                z ,
+            )
+
+            this._scene.add(randomAsset);
+        }
     }
     
 

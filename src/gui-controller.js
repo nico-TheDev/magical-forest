@@ -1,5 +1,5 @@
 import GUI from 'lil-gui';
-import { TREE_TYPES } from './main';
+import { TREE_TYPES } from './constants';
 
 
 export class GUIManager {
@@ -101,6 +101,24 @@ export class GUIManager {
             .min(-100)
             .max(100)
             .step(1);
+    }
+
+    _AddCabinController(cabinValues){
+        const cabin = this.gui.addFolder("Cabin");
+        const cabinModel = this._scene.getObjectByName("Cabin");
+        console.log(cabinModel.position)
+        cabin.add(cabinModel.position,"x")
+             .min(-10)
+             .max(10)
+             .step(0.001);
+        cabin.add(cabinModel.position,"y")
+             .min(-10)
+             .max(10)
+             .step(0.001);
+        cabin.add(cabinModel.position,"z")
+             .min(-10)
+             .max(10)
+             .step(0.001);
     }
 
     _UpdateTreePositions(defaultValues) {
