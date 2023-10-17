@@ -94,14 +94,16 @@ class MagicalForest {
         this._threejs.setSize(window.innerWidth,window.innerHeight);
         this._threejs.domElement.id = "threejs";
         this._DefaultGUI = {
-            minCircleSize: 8,
-            maxCircleSize: 40,
-            normalTreeX: TREE_TYPES.NORMAL.center.x,
-            normalTreeZ: TREE_TYPES.NORMAL.center.z,
-            birchTreeX: TREE_TYPES.BIRCH.center.x,
-            birchTreeZ: TREE_TYPES.BIRCH.center.z,
-            pineTreeX: TREE_TYPES.PINE.center.x,
-            pineTreeZ: TREE_TYPES.PINE.center.z,
+            initialTreeValues:{
+                minCircleSize: 8,
+                maxCircleSize: 40,
+                normalTreeX: TREE_TYPES.NORMAL.center.x,
+                normalTreeZ: TREE_TYPES.NORMAL.center.z,
+                birchTreeX: TREE_TYPES.BIRCH.center.x,
+                birchTreeZ: TREE_TYPES.BIRCH.center.z,
+                pineTreeX: TREE_TYPES.PINE.center.x,
+                pineTreeZ: TREE_TYPES.PINE.center.z,
+            },
             lampLight:{
                 x:0,
                 y:0,
@@ -122,10 +124,11 @@ class MagicalForest {
         const far = 1000;
         
         this._camera = new THREE.PerspectiveCamera(fov,aspect,near,far);
-        this._camera.position.set(60,20,0);
+        this._camera.position.set(7,1.5,5);
 
         this._scene = new THREE.Scene();
-        this._DebugManager = new GUIManager(this._DefaultGUI,this._scene);
+        this._scene.fog = new THREE.Fog("#7f8c8d",5,50);
+
 
         // MODELS
 
@@ -134,7 +137,23 @@ class MagicalForest {
         const loadingManager = new THREE.LoadingManager();
 
         loadingManager.onLoad = () => {
-            console.log("LOADED")
+            const loaderContainer = document.querySelector("div.loader-container");
+            loaderContainer.style.display = "none";
+            if(window.location.pathname.includes("debug")){
+                this._DebugManager = new GUIManager(this._scene);
+                this._DebugManager._AddTreesController(this._DefaultGUI.initialTreeValues)
+                this._DebugManager._AddLampController(this._DefaultGUI.lampLight)
+            }
+        }
+
+        loadingManager.onProgress = (url, loadedAssets, totalAssets) =>{
+            const loaderText = document.querySelector("h6#load-percentage");
+            const loaderBar = document.querySelector("div.loader-main");
+            console.log(`LOADED ${loadedAssets} / ${totalAssets}`);       
+            const percentage = Math.floor((loadedAssets / totalAssets) * 100);
+            loaderText.textContent = percentage + "%";
+            loaderBar.style.width = percentage + "%";
+            console.log("Loaded " + percentage + "%");
         }
         this._loader = new GLTFLoader(loadingManager);
         const dracoLoader = new DRACOLoader();
@@ -148,10 +167,10 @@ class MagicalForest {
 
         const axesHelper = new THREE.AxesHelper( 5 );
         axesHelper.position.set(0,10,0)
-        // this._scene.add(axesHelper);
+        this._scene.add(axesHelper);
 
-        let light = new THREE.DirectionalLight("#bdc3c7",1.0);
-        light.position.set(20,40,10);
+        let light = new THREE.DirectionalLight("white",1.0);
+        light.position.set(0,5,10);
         light.target.position.set(0,0,0);
         light.castShadow = true;
         light.shadow.mapSize.width = 2048;
@@ -165,26 +184,29 @@ class MagicalForest {
         light.shadow.camera.bottom = 100;
         const directionLightHelper = new THREE.DirectionalLightHelper( light, 10 );
         this._scene.add(light);
-        // this._scene.add(directionLightHelper);
+        this._scene.add(directionLightHelper);
 
         light = new THREE.AmbientLight("#2c3e50",1);
         this._scene.add(light);
 
-        light = new THREE.PointLight( "#f1c40f", 1, 100 );
+        light = new THREE.PointLight( "#e67e22", 1, 100 );
         light.castShadow = true;
         light.receiveShadow = true;
         light.shadow.mapSize.width = 256;
         light.shadow.mapSize.height = 256;
         light.shadow.camera.near = 0.1;
         light.shadow.camera.far = 10;
+        light.distance  = 10;
+        light.power = 5;
+
         const pointLightHelper = new THREE.PointLightHelper(light,1);
         light.position.set( 0.5, 2.7, 1.5 );
         light.name = "LampLight";
         pointLightHelper.name = "LampLightHelper";
-        this._scene.add( light );
+        this._scene.add( light,pointLightHelper );
 
         const controls = new OrbitControls(this._camera,this._threejs.domElement);
-        controls.target.set(0,20,0);
+        controls.target.set(0,1,0);
         controls.update();
 
         this._LoadGround();
@@ -261,7 +283,7 @@ class MagicalForest {
         this._LoadSky();
         this._LoadCabin();
         this._LoadDefaultTrees(TREE_TYPES.NORMAL,200);
-        // this._LoadDefaultTrees(TREE_TYPES.MAPLE);
+        this._LoadDefaultTrees(TREE_TYPES.MAPLE,40);
         this._LoadDefaultTrees(TREE_TYPES.PINE,50);
         this._LoadDefaultTrees(TREE_TYPES.BIRCH,150);
     }
@@ -301,12 +323,17 @@ class MagicalForest {
 
             for(let treeCount = 0; treeCount < treeAmount; treeCount++){
                 const angle = Math.random() * Math.PI * 2
-                const radius = this._DefaultGUI.minCircleSize + Math.random() * this._DefaultGUI.maxCircleSize
+                const radius = this._DefaultGUI.initialTreeValues.minCircleSize + Math.random() * this._DefaultGUI.initialTreeValues.maxCircleSize
 
                 const x = Math.sin(angle) * radius;
                 const z = Math.cos(angle) * radius;
 
                 let tree = trees[Math.floor(Math.random() * maxTreeCount)].clone();
+
+                tree.children.forEach(item => {
+                    item.castShadow = true;
+                    item.receiveShadow = true;
+                })
 
                 tree.objectName = "Forest-Tree"
                 tree.treeType = treeType;
