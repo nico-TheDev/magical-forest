@@ -97,8 +97,7 @@ class MagicalForest {
 
         const axesHelper = new THREE.AxesHelper( 5 );
         axesHelper.position.set(0,10,0)
-        this._scene.add(axesHelper);
-
+        
         let light = new THREE.DirectionalLight("white",1.5);
         light.position.set(0,5,10);
         light.target.position.set(0,0,0);
@@ -107,18 +106,17 @@ class MagicalForest {
         light.shadow.mapSize.height = 2048;
         light.shadow.camera.near = 0.1;
         light.shadow.camera.far = 500.0;
-
+        
         light.shadow.camera.left = 100;
         light.shadow.camera.right = 100;
         light.shadow.camera.top = 100;
         light.shadow.camera.bottom = 100;
         const directionLightHelper = new THREE.DirectionalLightHelper( light, 10 );
         this._scene.add(light);
-        this._scene.add(directionLightHelper);
-
+        
         light = new THREE.AmbientLight("#2c3e50",1);
         this._scene.add(light);
-
+        
         light = new THREE.PointLight( "#e67e22", 1, 100 );
         light.castShadow = true;
         light.receiveShadow = true;
@@ -128,12 +126,14 @@ class MagicalForest {
         light.shadow.camera.far = 10;
         light.distance  = 10;
         light.power = 5;
-
+        
         const pointLightHelper = new THREE.PointLightHelper(light,1);
         light.position.set( 0.5, 2.7, 1.5 );
         light.name = "LampLight";
         pointLightHelper.name = "LampLightHelper";
-        this._scene.add( light,pointLightHelper );
+        this._scene.add( light );
+        
+        window.location.pathname.includes("debug") && this._scene.add(axesHelper,directionLightHelper, pointLightHelper);
 
         const controls = new OrbitControls(this._camera,this._threejs.domElement);
         controls.target.set(0,1,0);
@@ -209,10 +209,17 @@ class MagicalForest {
         
     }
 
+    async _LoadAnimals(){
+        const dog = await this._loader.loadAsync("./resources/Shiba Inu.glb");
+        
+        console.log(dog.scene);
+    }
+
     _LoadForest(){
         this._LoadSky();
         this._LoadFoliage();
         this._LoadCabin();
+        this._LoadAnimals();
         this._LoadDefaultTrees(TREE_TYPES.NORMAL,200);
         this._LoadDefaultTrees(TREE_TYPES.MAPLE,40);
         this._LoadDefaultTrees(TREE_TYPES.PINE,50);
@@ -290,71 +297,42 @@ class MagicalForest {
         const rocksScene = await this._loader.loadAsync("./resources/Rocks.glb");
         const bushesScene = await this._loader.loadAsync("./resources/Bushes.glb");
         const grassScene = await this._loader.loadAsync("./resources/Grass.glb");
+        const flowersScene = await this._loader.loadAsync("./resources/Flowers.glb");
 
         const rocks = rocksScene.scene.children[0].children;
         const bushes = bushesScene.scene.children[0].children;
         const grass = grassScene.scene.children[0].children;
+        const flowers = flowersScene.scene.children[0].children;
         console.log(rocks)
         console.log(bushes)
         console.log(grass)
 
         // LOAD GRASS
-        for(let i = 0; i < 5000 ; i++) {
-            const angle = Math.random() * Math.PI * 2
-            const radius = 5 + Math.random() * 40
-
-            const x = Math.sin(angle) * radius;
-            const z = Math.cos(angle) * radius;
-            let randomAsset = grass[Math.floor(Math.random() * grass.length)].clone();
-
-            randomAsset.position.set(
-                x ,
-                0,
-                z ,
-            )
-
-            this._scene.add(randomAsset);
-        }
+        this._LoadMultipleAssets(grass,10000,40);
         // LOAD ROCKS
-        for(let i = 0; i < 20 ; i++) {
-            const angle = Math.random() * Math.PI * 2
-            const radius = 5 + Math.random() * 10
-
-            const x = Math.sin(angle) * radius;
-            const z = Math.cos(angle) * radius;
-            let randomAsset = rocks[Math.floor(Math.random() * rocks.length)].clone();
-
-            randomAsset.position.set(
-                x ,
-                0,
-                z ,
-            )
-
-            randomAsset.rotation.set(
-                Math.random() * Math.PI + 5,
-                0,
-                Math.random() * Math.PI + 5,
-            )
-
-            this._scene.add(randomAsset);
-        }
-
+        this._LoadMultipleAssets(rocks,20,10);
           // LOAD BUSH
-          for(let i = 0; i < 100 ; i++) {
+        this._LoadMultipleAssets(bushes,100,20);
+          // LOAD FLOWERS
+        this._LoadMultipleAssets(flowers,1000,10);
+    }
+
+    _LoadMultipleAssets(currentAsset, assetCount, radiusMultiplier,){
+        for(let i = 0; i < assetCount ; i++) {
             const angle = Math.random() * Math.PI * 2
-            const radius = 5 + Math.random() * 20
+            const radius = 5 + Math.random() * radiusMultiplier
 
             const x = Math.sin(angle) * radius;
             const z = Math.cos(angle) * radius;
-            let randomAsset = bushes[Math.floor(Math.random() * bushes.length)].clone();
+            let asset = currentAsset[Math.floor(Math.random() * currentAsset.length)].clone();
 
-            randomAsset.position.set(
+            asset.position.set(
                 x ,
-                0.5,
+                0,
                 z ,
             )
 
-            this._scene.add(randomAsset);
+            this._scene.add(asset);
         }
     }
     
