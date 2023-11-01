@@ -214,9 +214,16 @@ class MagicalForest {
     }
 
     async _LoadAnimals(){
+        this._LoadDog();
+        this._LoadDeer();
+        const model = await this._LoadDeer({x:-4,y:0.1,z: 3 },1);
+        model.rotation.set(0,-1,0)
+    }
+
+    async _LoadDog(){
         const dogScene = await this._loader.loadAsync("./resources/Shiba Inu.glb");
         const dogClips = dogScene.animations;
-        console.log(dogClips);
+        // console.log(dogClips);
         const dog = dogScene.scene.children[0];
         const scale = 0.2;
         
@@ -250,8 +257,37 @@ class MagicalForest {
         this._scene.add(dog);
         walkForwardTween.start(2000);
         idle.play();
+        
 
     }
+
+    async _LoadDeer(position = {x: -3,y :0.1, z: 5}, delay = 0){
+        const deerFile = await this._loader.loadAsync("./resources/Deer.glb");
+        const deerModel = deerFile.scene.getObjectByName("RootNode");
+        const deerAnims = deerFile.animations;
+
+        deerModel.name = "Deer";
+        deerModel.scale.setScalar(0.3);
+        deerModel.position.set(position.x,position.y,position.z);
+        deerModel.rotation.set(0,-1.5,0)
+
+        console.log(deerAnims);
+
+        const mixer = new THREE.AnimationMixer(deerModel);
+        this._mixers.push(mixer);
+
+        const eatClip = THREE.AnimationClip.findByName(deerAnims,"Eating");
+        const eating = mixer.clipAction(eatClip);
+        if(delay) eating.startAt(delay);
+
+        eating.play();
+
+        this._scene.add(deerModel);
+
+        return deerModel;
+
+    }
+
 
     _LoadForest(){
         this._LoadSky();
