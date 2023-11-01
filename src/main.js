@@ -4,6 +4,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { GUIManager } from "./gui-controller";
 import { TREE_TYPES } from "./constants";
+
+import * as TWEEN from "@tweenjs/tween.js";
 let _APP = null
 
 
@@ -39,6 +41,7 @@ class MagicalForest {
                 intensity:0
             }
         }
+        this._mixers = [];
         document.body.appendChild(this._threejs.domElement);
 
         window.addEventListener("resize",() => {
@@ -72,6 +75,7 @@ class MagicalForest {
                 this._DebugManager._AddTreesController(this._DefaultGUI.initialTreeValues)
                 this._DebugManager._AddLampController(this._DefaultGUI.lampLight)
                 this._DebugManager._AddCabinController();
+                this._DebugManager._AddDogController();
                 
             }
         }
@@ -210,9 +214,43 @@ class MagicalForest {
     }
 
     async _LoadAnimals(){
-        const dog = await this._loader.loadAsync("./resources/Shiba Inu.glb");
+        const dogScene = await this._loader.loadAsync("./resources/Shiba Inu.glb");
+        const dogClips = dogScene.animations;
+        console.log(dogClips);
+        const dog = dogScene.scene.children[0];
+        const scale = 0.2;
         
-        console.log(dog.scene);
+        dog.scale.setScalar(scale);
+        dog.position.set(-3,0.1,3.35);
+        dog.rotation.set(0,1.5,0);
+        dog.name = "Shiba Inu"
+
+        const walkForwardTween =  new TWEEN.Tween(dog.position);
+        const rotateTween = new TWEEN.Tween(dog.rotation);
+        const rotateBackTween = new TWEEN.Tween(dog.rotation);
+        const walkBackTween =  new TWEEN.Tween(dog.position);
+
+        walkForwardTween.to({x:3},5000)
+        rotateTween.to({y:-1.5},2000);
+        walkBackTween.to({x:-3},5000)
+        rotateTween.to({y:-1.5},2000);
+        rotateBackTween.to({y:1.5},2000);
+
+        // TWEEN 
+
+        walkForwardTween.chain(rotateTween);
+        rotateTween.chain(walkBackTween);
+        walkBackTween.chain(rotateBackTween);
+        rotateBackTween.chain(walkForwardTween);
+
+        const mixer = new THREE.AnimationMixer(dog);
+        this._mixers.push(mixer);
+        const clip = THREE.AnimationClip.findByName(dogClips,"Walk");
+        const idle = mixer.clipAction(clip);
+        this._scene.add(dog);
+        walkForwardTween.start(2000);
+        idle.play();
+
     }
 
     _LoadForest(){
@@ -343,12 +381,33 @@ class MagicalForest {
         this._threejs.setSize(window.innerWidth,window.innerHeight);
     }
 
+    _Step(timeElapsed) {
+        const timeElapsedS = timeElapsed * 0.001;
+        if (this._mixers) {
+          this._mixers.map(m => m.update(timeElapsedS));
+        }
+    
+        if (this._controls) {
+          this._controls.Update(timeElapsedS);
+        }
+      }
+
     _RAF(){
-        requestAnimationFrame(()=>{
-            this._threejs.render(this._scene,this._camera);
+        requestAnimationFrame((t) => {
+            if (this._previousRAF === null) {
+              this._previousRAF = t;
+            }
+      
             this._RAF();
-        })
+            TWEEN.update()
+      
+            this._threejs.render(this._scene, this._camera);
+            this._Step(t - this._previousRAF);
+            this._previousRAF = t;
+          });
     }
+
+   
 }
 
 

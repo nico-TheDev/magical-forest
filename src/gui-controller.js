@@ -120,6 +120,57 @@ export class GUIManager {
              .max(10)
              .step(0.001);
     }
+    
+    _AddDogController(dogValues){
+        const dog = this.gui.addFolder("Dog");
+        const dogModel = this._scene.getObjectByName("Shiba Inu");
+
+        if(!dogModel) return;
+
+        dog.add(dogModel.position,"x")
+                .min(-10)
+                .max(10)
+                .step(0.01)
+                .name("Position X")
+        dog.add(dogModel.position,"y")
+                .min(-10)
+                .max(10)
+                .step(0.01)
+                .name("Position Y")
+        dog.add(dogModel.position,"z")
+                .min(-10)
+                .max(10)
+                .step(0.01)
+                .name("Position Z")
+
+        dog.add(dogModel.rotation,"x")
+                .min(-10)
+                .max(10)
+                .step(0.01)
+                .name("Rotation X")
+        dog.add(dogModel.rotation,"y")
+                .min(-10)
+                .max(10)
+                .step(0.01)
+                .name("Rotation Y")
+        dog.add(dogModel.rotation,"z")
+                .min(-10)
+                .max(10)
+                .step(0.01)
+                .name("Rotation Z")
+
+        dog.add(dogModel.scale,"x")
+           .min(-10)
+           .max(10)
+           .step(0.01)
+           .name("Scale")
+           .onChange((scaleValue)=>{
+            dogModel.scale.setScalar(scaleValue)
+           })
+
+
+      
+    }
 
     _UpdateTreePositions(defaultValues) {
         this._scene.traverse(function (currentObject) {
